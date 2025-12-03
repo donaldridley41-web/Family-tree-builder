@@ -1,21 +1,121 @@
-name: Publish Website
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Family Tree Builder</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 1rem; }
+    header { margin-bottom: 1rem; }
+    #tree { width: 100%; height: 500px; border: 1px solid #ccc; }
+    .panel { margin-bottom: 1rem; padding: 0.5rem; border: 1px solid #ddd; }
+    label { display: block; margin-top: 0.5rem; }
+  </style>
+  <!-- Example: include your family tree JS library here -->
+  <!-- <script src="familytree.js"></script> -->
+</head>
+<body>
+<header>
+  <h1>Family Tree Builder</h1>
+</header>
 
-on:
-  push:
-    branches:
-      - donaldridley41-web-patch-1
-  workflow_dispatch:
-jobs:
-  Publish-Website:
-    name: Publish-Website
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@master
-      - name: Upload the artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: wpcom
-          path: |
-            .
-            !.git*
-          retention-days: 1
+<div class="panel">
+  <h2>Family Tree</h2>
+  <div id="tree">Tree will render here…</div>
+</div>
+
+<div class="panel">
+  <h2>GEDCOM Upload</h2>
+  <form id="gedcomForm">
+    <label>
+      Select GEDCOM file (.ged):
+      <input type="file" id="gedcomFile" accept=".ged">
+    </label>
+    <button type="submit">Import GEDCOM</button>
+  </form>
+  <pre id="gedcomLog"></pre>
+</div>
+
+<div class="panel">
+  <h2>DNA Upload</h2>
+  <form id="dnaForm">
+    <label>
+      Person ID in tree:
+      <input type="text" id="dnaPersonId" required>
+    </label>
+    <label>
+      Raw DNA file (.txt, .csv):
+      <input type="file" id="dnaFile" accept=".txt,.csv" required>
+    </label>
+    <button type="submit">Upload DNA</button>
+  </form>
+  <pre id="dnaLog"></pre>
+</div>
+
+<script>
+  // In-memory example data structure
+  const appState = {
+    persons: [],      // {id, name, ...}
+    relationships: [],// {id1, id2, type}
+    dnaFiles: []      // {personId, filename, text}
+  };
+
+  // TODO: initialize your tree library with appState.persons / relationships
+  function renderTree() {
+    // Example placeholder – replace with FamilyTreeJS or similar.
+    document.getElementById('tree').textContent =
+      'Persons in tree: ' + appState.persons.length;
+  }
+
+  // Simple GEDCOM import placeholder
+  document.getElementById('gedcomForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const file = document.getElementById('gedcomFile').files[0];
+    const log = document.getElementById('gedcomLog');
+    if (!file) {
+      log.textContent = 'Please choose a GEDCOM file.';
+      return;
+    }
+    const text = await file.text();
+    // TODO: parse GEDCOM properly and populate appState.persons / relationships.
+    // For now just show basic info.
+    log.textContent = 'Loaded GEDCOM: ' + file.name +
+      '
+Size: ' + text.length + ' chars
+(Parsing not implemented yet)';
+    renderTree();
+  });
+
+  // Simple DNA upload placeholder with minimal validation
+  document.getElementById('dnaForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const personId = document.getElementById('dnaPersonId').value.trim();
+    const file = document.getElementById('dnaFile').files[0];
+    const log = document.getElementById('dnaLog');
+    if (!personId || !file) {
+      log.textContent = 'Person ID and file are required.';
+      return;
+    }
+    const text = await file.text();
+    // Very rough check that file looks like raw DNA (rsid,chromosome,position,genotype header)
+    const firstLine = text.split(/
+?
+/)[0].toLowerCase();
+    if (!firstLine.includes('rsid') ||
+        !firstLine.includes('chromosome') ||
+        !firstLine.includes('position')) {
+      log.textContent =
+        'Warning: file does not look like standard raw DNA format. Proceeding anyway.';
+    } else {
+      log.textContent = 'DNA file accepted for person ' + personId +
+                        '
+File: ' + file.name +
+                        '
+Bytes: ' + file.size;
+    }
+    appState.dnaFiles.push({ personId, filename: file.name, text });
+  });
+
+  renderTree();
+</script>
+</body>
+</html>
